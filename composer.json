@@ -1,0 +1,50 @@
+{
+  "name":        "dreamfactory/df-trino",
+  "description": "DreamFactory(tm) Trino Code",
+  "homepage":    "https://www.dreamfactory.com/",
+  "keywords":    [
+    "dreamfactory",
+    "trino",
+    "connector"
+  ],
+  "license":     [
+    "Apache-2.0"
+  ],
+  "authors":     [
+    {
+      "name":  "DreamFactory Developers",
+      "email": "code@dreamfactory.com"
+    }
+  ],
+  "support":     {
+    "email":  "dspsupport@dreamfactory.com",
+    "source": "https://github.com/dreamfactorysoftware/df-trino",
+    "issues": "https://github.com/dreamfactorysoftware/df-trino/issues",
+    "wiki":   "https://wiki.dreamfactory.com"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require":     {
+    "dreamfactory/df-sqldb": "~1.0",
+    "ext-pdo": "*",
+    "ext-odbc": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "@stable"
+  },
+  "autoload":    {
+    "psr-4": {
+      "DreamFactory\\Core\\Trino\\": "src/"
+    }
+  },
+  "extra":       {
+    "branch-alias": {
+      "dev-develop": "0.1.x-dev"
+    },
+    "laravel": {
+      "providers": [
+        "DreamFactory\\Core\\Trino\\ServiceProvider"
+      ]
+    }
+  }
+}
