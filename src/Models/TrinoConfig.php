@@ -22,6 +22,8 @@ class TrinoConfig extends BaseServiceConfigModel
         'description',
         'host',
         'port',
+        'username',
+        'password',
         'driver_path',
     ];
 
@@ -64,6 +66,20 @@ class TrinoConfig extends BaseServiceConfigModel
                 $schema['required'] = true;
                 $schema['description'] =
                     'Your TrinoService Port';
+                break;
+            case 'username':
+                $schema['label'] = 'Username';
+                $schema['type'] = 'text';
+                $schema['required'] = true;
+                $schema['description'] =
+                    'Your TrinoService Username';
+                break;
+            case 'password':
+                $schema['label'] = 'Password';
+                $schema['type'] = 'password';
+                $schema['required'] = true;
+                $schema['description'] =
+                    'Your TrinoService Password';
                 break;
             case 'driver_path':
                 $schema['label'] = 'Trino ODBC Driver Path';
