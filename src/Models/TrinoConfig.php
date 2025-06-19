@@ -87,6 +87,7 @@ class TrinoConfig extends BaseServiceConfigModel
                 $schema['required'] = true;
                 $schema['description'] =
                     'Your ODBC Driver Path';
+                $schema['default'] = '/opt/simba/trinoodbc/lib/64/libtrinoodbc_sb64.so';
                 break;
         }
     }

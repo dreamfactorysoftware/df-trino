@@ -27,6 +27,6 @@ class TrinoConnector extends Connector implements ConnectorInterface
             . "Port={$cfg['port']};"
             . "AuthMech=0;"
             . "UID={$cfg['username']};"
-            . "PWD={$cfg['password']}"
+            . "PWD={$cfg['password']}";
     }
 }

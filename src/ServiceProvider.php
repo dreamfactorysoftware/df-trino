@@ -25,7 +25,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             $db->extend('trino', function ($config) {
                 $connector = new TrinoConnector();
                 $connection = $connector->connect($config);
-
                 return new TrinoConnection($connection, $config["database"], $config["prefix"], $config);
             });
         });

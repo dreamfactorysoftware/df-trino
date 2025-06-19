@@ -1,6 +1,9 @@
-<?php namespace DreamFactory\Core\Trino\Services;
-use DreamFactory\Core\SqlDb\Services\SqlDb;
+<?php
 
+namespace DreamFactory\Core\Trino\Services;
+
+use DreamFactory\Core\SqlDb\Services\SqlDb;
+use Illuminate\Support\Facades\Request;
 
 /**
  * Class TrinoService
@@ -19,6 +22,16 @@ class TrinoService extends SqlDb
 
     public static function adaptConfig(array &$config)
     {
+        $catalog = Request::header('catalog');
+        $schema = Request::header('schema');
+        if (!empty($catalog) && !empty($schema)) {
+            $config['catalog'] = $catalog;
+            $config['schema'] = $schema;
+        } elseif (!empty($catalog) && empty($schema)) {
+            throw new \Exception("If catalog is specified, the schema field cannot be empty.");
+        } elseif (empty($catalog) && !empty($schema)) {
+            throw new \Exception("If schema is specified, the catalog field cannot be empty.");
+        }
         $config['driver'] = 'trino';
         if (!isset($config['odbc'])) {
             $config['odbc'] = [];
@@ -28,6 +41,7 @@ class TrinoService extends SqlDb
                 $config['odbc'][$key] = $value;
             }
         }
+
         parent::adaptConfig($config);
     }
 
@@ -44,9 +58,15 @@ class TrinoService extends SqlDb
         $paths = [];
         if (isset($base['paths'])) {
             foreach ($base['paths'] as $path => $methods) {
+
                 if (str_contains($path, '_table')) {
                     if (isset($methods['get'])) {
                         $paths[$path]['get'] = $methods['get'];
+                        array_push(
+                            $paths[$path]['get']['parameters'],
+                            $this->getHeaderParam('catalog', 'The name of the catalog to query. A catalog in Trino is a namespace that contains one or more schemas, and it represents a specific data source (e.g., a database).'),
+                            $this->getHeaderParam('schema', 'The name of the schema within the specified catalog. A schema organizes tables and other database objects, allowing for better structure and management of the data within the catalog.')
+                        );
                     }
                 }
             }
@@ -55,5 +75,18 @@ class TrinoService extends SqlDb
 
         $base['description'] = 'Trino service for connecting to Trino SQL endpoints.';
         return $base;
+    }
+
+    private function getHeaderParam($name, $description = null): array
+    {
+        return [
+            "name" => $name,
+            "description" => $description ?: ucfirst($name) . " for database connection.",
+            "schema" => [
+                "type" => "string"
+            ],
+            "in" => "header",
+            "required" => false
+        ];
     }
 }
