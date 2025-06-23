@@ -5,12 +5,12 @@ use DreamFactory\Core\Services\ServiceType;
 use DreamFactory\Core\Enums\ServiceTypeGroups;
 use DreamFactory\Core\Trino\Models\TrinoConfig;
 use DreamFactory\Core\Enums\LicenseLevel;
-use DreamFactory\Core\Trino\Database\Connectors\TrinoConnector;
 use DreamFactory\Core\Trino\Database\TrinoConnection;
 use DreamFactory\Core\Services\ServiceManager;
 use Illuminate\Database\DatabaseManager;
 use DreamFactory\Core\Trino\Services\TrinoService;
 use DreamFactory\Core\Trino\Database\Schema\TrinoSchema;
+use DreamFactory\Core\Trino\Database\Connectors\TrinoConnector;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
@@ -24,8 +24,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->app->resolving('db', function (DatabaseManager $db) {
             $db->extend('trino', function ($config) {
                 $connector = new TrinoConnector();
-                $connection = $connector->connect($config);
-                return new TrinoConnection($connection, $config["database"], $config["prefix"], $config);
+                $odbcConnection = $connector->connect($config);
+                return new TrinoConnection($odbcConnection, $config["database"], $config["prefix"], $config);
             });
         });
 

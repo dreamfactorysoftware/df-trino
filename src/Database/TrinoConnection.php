@@ -9,27 +9,17 @@ class TrinoConnection extends Connection
 {
     protected $odbcConnection;
 
+    public function __construct($odbcConnection, $database = '', $tablePrefix = '', array $config = [])
+    {
+        parent::__construct($odbcConnection, $database, $tablePrefix, $config);
+        $this->odbcConnection = $odbcConnection;
+    }
+
     /**
-     * Override PDO connection with native ODBC connection for queries.
+     * Return the provided ODBC connection resource.
      */
     protected function getOdbcConnection()
     {
-        if (!$this->odbcConnection) {
-            $config = $this->getConfig();
-
-            // Extract DSN, username, password from config
-            $dsn = $config['odbc']['dsn'] ?? 'TrinoSimba'; // fallback DSN name
-            $user = $config['odbc']['username'] ?? '';
-            $pass = $config['odbc']['password'] ?? '';
-
-            // Connect using native ODBC
-            $this->odbcConnection = odbc_connect($dsn, $user, $pass);
-
-            if (!$this->odbcConnection) {
-                throw new \Exception('Failed to connect to ODBC DSN: ' . $dsn);
-            }
-        }
-
         return $this->odbcConnection;
     }
 

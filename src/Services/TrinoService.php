@@ -4,6 +4,8 @@ namespace DreamFactory\Core\Trino\Services;
 
 use DreamFactory\Core\SqlDb\Services\SqlDb;
 use Illuminate\Support\Facades\Request;
+use DreamFactory\Core\SqlDb\Resources\Table;
+use DreamFactory\Core\Trino\Resources\TrinoTable;
 
 /**
  * Class TrinoService
@@ -18,6 +20,15 @@ class TrinoService extends SqlDb
 
         $prefix = parent::getConfigBasedCachePrefix();
         $this->setConfigBasedCachePrefix($prefix);
+    }
+
+    public function getResourceHandlers()
+    {
+        $handlers = parent::getResourceHandlers();
+
+        $handlers[Table::RESOURCE_NAME]['class_name'] = TrinoTable::class;
+
+        return $handlers;
     }
 
     public static function adaptConfig(array &$config)
@@ -58,8 +69,10 @@ class TrinoService extends SqlDb
         $paths = [];
         if (isset($base['paths'])) {
             foreach ($base['paths'] as $path => $methods) {
-
                 if (str_contains($path, '_table')) {
+                    if (isset($methods['parameters'])) {
+                        $paths[$path]['parameters'] = $methods['parameters'];
+                    }
                     if (isset($methods['get'])) {
                         $paths[$path]['get'] = $methods['get'];
                         array_push(

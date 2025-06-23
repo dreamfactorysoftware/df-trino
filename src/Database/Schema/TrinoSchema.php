@@ -5,6 +5,7 @@ namespace DreamFactory\Core\Trino\Database\Schema;
 use DreamFactory\Core\SqlDb\Database\Schema\SqlSchema;
 use DreamFactory\Core\Database\Schema\TableSchema;
 use DreamFactory\Core\Enums\DbResourceTypes;
+use DreamFactory\Core\Database\Schema\ColumnSchema;
 
 class TrinoSchema extends SqlSchema
 {
