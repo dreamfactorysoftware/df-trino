@@ -34,7 +34,6 @@ class TrinoSchema extends SqlSchema
             $sql .= ".{$schema}";
         }
 
-        \Log::debug($sql);
         $rows = $this->connection->select($sql);
 
         $names = [];
@@ -47,7 +46,11 @@ class TrinoSchema extends SqlSchema
             $name = $resourceName;
             $quotedName = $this->quoteTableName($schemaName) . '.' . $this->quoteTableName($resourceName);
             $settings = compact('catalogName', 'schemaName', 'resourceName', 'name', 'internalName', 'quotedName');
-            $names[strtolower($name)] = new TableSchema($settings);
+            $tableSchema = new TableSchema($settings);
+
+            $this->loadTableColumns($tableSchema);
+
+            $names[strtolower($name)] = $tableSchema;
         }
 
         return $names;
@@ -61,14 +64,12 @@ class TrinoSchema extends SqlSchema
      */
     public function getSchemas($catalog = '')
     {
-        \Log::debug('getSchemas triggered');
         $catalog = $catalog ?: $this->getDefaultCatalog();
         if (empty($catalog)) {
             throw new \Exception('No catalogs found for schema discovery');
         }
 
         $sql = "select schema_name FROM {$catalog}.information_schema.schemata";
-        \Log::debug($sql);
 
         $rows = $this->connection->select($sql);
 
@@ -132,7 +133,6 @@ class TrinoSchema extends SqlSchema
         $specifiedSchema = $this->connection->getConfig('schema');
         $fallbackSchemas = $this->getSchemas($catalog);
 
-        \Log::debug(['specifiedSchema' => $specifiedSchema]);
         if (empty($specifiedSchema)) {
             return !empty($fallbackSchemas) ? $fallbackSchemas[0] : null;
         } else {
@@ -140,5 +140,35 @@ class TrinoSchema extends SqlSchema
         }
 
         return null;
+    }
+
+    /**
+     * Load columns for a given table into the TableSchema object.
+     *
+     * @param TableSchema $table
+     */
+    protected function loadTableColumns(TableSchema $table)
+    {
+        $catalog = $table->catalogName ?? $this->getDefaultCatalog();
+        $schema = $table->schemaName ?? $this->getDefaultSchema($catalog);
+        $tableName = $table->resourceName ?? $table->name;
+
+        $sql = 'SHOW COLUMNS FROM ' . $catalog . '.' . $schema . '.' . $tableName;
+        $columns = $this->connection->select($sql);
+
+        foreach ($columns as $column) {
+            $column = array_change_key_case((array)$column, CASE_LOWER);
+            $c = new ColumnSchema(['name' => $column['column']]);
+            $c->quotedName = $this->quoteColumnName($c->name);
+            $c->dbType = $column['type'];
+            $c->allowNull = (isset($column['null']) ? strtolower($column['null']) === 'yes' : true);
+            $c->defaultValue = $column['default'] ?? null;
+            $c->isPrimaryKey = false;
+            $this->extractType($c, $c->dbType);
+            $this->extractLimit($c, $c->dbType);
+            $c->fixedLength = $this->extractFixedLength($c->dbType);
+
+            $table->addColumn($c);
+        }
     }
 }

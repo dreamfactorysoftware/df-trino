@@ -6,6 +6,7 @@ use DreamFactory\Core\SqlDb\Services\SqlDb;
 use Illuminate\Support\Facades\Request;
 use DreamFactory\Core\SqlDb\Resources\Table;
 use DreamFactory\Core\Trino\Resources\TrinoTable;
+use DreamFactory\Core\Enums\ApiOptions;
 
 /**
  * Class TrinoService
@@ -77,8 +78,18 @@ class TrinoService extends SqlDb
                         $paths[$path]['get'] = $methods['get'];
                         array_push(
                             $paths[$path]['get']['parameters'],
-                            $this->getHeaderParam('catalog', 'The name of the catalog to query. A catalog in Trino is a namespace that contains one or more schemas, and it represents a specific data source (e.g., a database).'),
-                            $this->getHeaderParam('schema', 'The name of the schema within the specified catalog. A schema organizes tables and other database objects, allowing for better structure and management of the data within the catalog.')
+                            $this->getHeaderParam(
+                                'catalog',
+                                'The name of the catalog to query.' .
+                                    'A catalog in Trino is a namespace that contains one or more schemas,' .
+                                    'and it represents a specific data source (e.g., a database).'
+                            ),
+                            $this->getHeaderParam(
+                                'schema',
+                                'The name of the schema within the specified catalog. ' .
+                                    'A schema organizes tables and other database objects,' .
+                                    'allowing for better structure and management of the data within the catalog.'
+                            )
                         );
                     }
                 }
@@ -90,7 +101,7 @@ class TrinoService extends SqlDb
         return $base;
     }
 
-    private function getHeaderParam($name, $description = null): array
+    private function getHeaderParam($name, $description = null, $required = false): array
     {
         return [
             "name" => $name,
@@ -99,7 +110,7 @@ class TrinoService extends SqlDb
                 "type" => "string"
             ],
             "in" => "header",
-            "required" => false
+            "required" => $required
         ];
     }
 }

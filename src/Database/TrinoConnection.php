@@ -34,6 +34,21 @@ class TrinoConnection extends Connection
 
         $conn = $this->getOdbcConnection();
 
+        // Inject bindings directly into the query (very basic, for numbers and strings)
+        if (!empty($bindings)) {
+            foreach ($bindings as $binding) {
+                // Properly quote strings, leave numbers as is
+                if (is_numeric($binding)) {
+                    $value = $binding;
+                } else {
+                    // Escape single quotes for SQL
+                    $value = "'" . str_replace("'", "''", $binding) . "'";
+                }
+                // Replace the first occurrence of ? with the value
+                $query = preg_replace('/\\?/', $value, $query, 1);
+            }
+        }
+        
         // No parameter binding support here; bindings must be injected safely before calling select
         $result = odbc_exec($conn, $query);
 
