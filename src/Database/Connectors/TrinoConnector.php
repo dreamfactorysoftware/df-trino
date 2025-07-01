@@ -9,17 +9,46 @@ class TrinoConnector extends Connector implements ConnectorInterface
 {
     public function connect(array $config)
     {
-        // Extract DSN, username, password from config
-        $dsn = $config['odbc']['dsn'] ?? 'TrinoSimba'; // fallback DSN name
-        $user = $config['odbc']['username'] ?? '';
-        $pass = $config['odbc']['password'] ?? '';
+        // Required fields for DSN-based ODBC
+        $required = ['username', 'password', 'driver_path', 'host', 'port'];
 
-        $odbcConnection = odbc_connect($dsn, $user, $pass);
-
-        if (!$odbcConnection) {
-            throw new \Exception('Failed to connect to ODBC DSN: ' . $dsn);
+        foreach ($required as $key) {
+            if (empty($config['odbc'][$key])) {
+                throw new \InvalidArgumentException("Missing required ODBC config parameter: '$key'");
+            }
         }
 
-        return $odbcConnection;
+        // Extract config values
+        $dsn      = 'TrinoSimbaODBC';
+        $user     = $config['odbc']['username'];
+        $pass     = $config['odbc']['password'];
+        $driver_path   = $config['odbc']['driver_path'];
+        $host     = $config['odbc']['host'];
+        $port     = $config['odbc']['port'];
+
+        // Temp file paths
+        $odbcIni     = '/var/tmp/odbc.ini';
+
+        // Write odbc.ini
+        file_put_contents($odbcIni, <<<EOT
+[$dsn]
+Driver=$driver_path
+Host=$host
+Port=$port
+EOT
+        );
+
+        // Set env variables for unixODBC
+        putenv("ODBCINI=$odbcIni");
+
+        \Log::debug($dsn . ' Connecting...');
+        // Attempt connection
+        $connection = odbc_connect($dsn, $user, $pass);
+
+        if (!$connection) {
+            throw new \RuntimeException('ODBC connection failed for DSN:' . $dsn . ' - ' . odbc_errormsg());
+        }
+
+        return $connection;
     }
-} 
+}
