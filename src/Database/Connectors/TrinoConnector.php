@@ -27,7 +27,7 @@ class TrinoConnector extends Connector implements ConnectorInterface
         $port     = $config['odbc']['port'];
 
         // Temp file paths
-        $odbcIni     = '/var/tmp/odbc.ini';
+        $odbcIni     = '/var/tmp/dreamfactory_trino_dns_odbc.ini';
 
         // Write odbc.ini
         file_put_contents($odbcIni, <<<EOT
