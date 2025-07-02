@@ -51,7 +51,6 @@ class TrinoSchema extends SqlSchema
             $names[strtolower($resourceName)] = $tableSchema;
         }
 
-        \Log::debug(['$names' => $names]);
         return $names;
     }
 
