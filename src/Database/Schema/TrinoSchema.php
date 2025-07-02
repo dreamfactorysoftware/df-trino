@@ -19,41 +19,76 @@ class TrinoSchema extends SqlSchema
         ];
     }
 
-    protected function getTableNames($schema = '', $catalog = '')
+    protected function getTableNames($schema = null)
     {
-        $catalog = $catalog ?: $this->getDefaultCatalog();
+        $catalog = $this->getDefaultCatalog();
         if (empty($catalog)) {
             throw new \Exception('No available catalogs found');
         }
-        $sql = 'SHOW TABLES FROM ' . $catalog;
 
-        if (!empty($schema)) {
-            $sql .= ".{$schema}";
-        } else {
-            $schema = $this->getDefaultSchema($catalog);
-            $sql .= ".{$schema}";
-        }
-
+        $schema = $this->getDefaultSchema($catalog);
+        $sql = 'SHOW TABLES FROM ' . $catalog . '.' . $schema;
         $rows = $this->connection->select($sql);
+
+        $columnsMap = $this->loadAllColumns($catalog, $schema); // Get all columns for the schema
 
         $names = [];
         foreach ($rows as $row) {
             $row = array_values((array)$row);
-            $catalogName = $catalog;
-            $schemaName = $schema;
             $resourceName = $row[0];
-            $internalName = $catalogName . '.' . $schemaName . '.' . $resourceName;
-            $name = $resourceName;
-            $quotedName = $this->quoteTableName($schemaName) . '.' . $this->quoteTableName($resourceName);
-            $settings = compact('catalogName', 'schemaName', 'resourceName', 'name', 'internalName', 'quotedName');
+            $internalName = $catalog . '.' . $schema . '.' . $resourceName;
+            $quotedName = $this->quoteTableName($schema) . '.' . $this->quoteTableName($resourceName);
+
+            $settings = compact('catalog', 'schema', 'resourceName', 'internalName', 'quotedName');
+            $settings['name'] = $resourceName;
+
             $tableSchema = new TableSchema($settings);
 
-            $this->loadTableColumns($tableSchema);
+            if (isset($columnsMap[$resourceName])) {
+                $this->assignColumnsToTable($tableSchema, $columnsMap[$resourceName]);
+            }
 
-            $names[strtolower($name)] = $tableSchema;
+            $names[strtolower($resourceName)] = $tableSchema;
         }
 
+        \Log::debug(['$names' => $names]);
         return $names;
+    }
+
+    protected function loadAllColumns($catalog, $schema)
+    {
+        $sql = "SELECT table_name, column_name, data_type, is_nullable, column_default
+            FROM {$catalog}.information_schema.columns
+            WHERE table_schema = '{$schema}'";
+
+        $rows = $this->connection->select($sql);
+
+        $map = [];
+        foreach ($rows as $column) {
+            $col = array_change_key_case((array)$column, CASE_LOWER);
+            $table = $col['table_name'];
+            $map[$table][] = $col;
+        }
+
+        \Log::debug(['$map' => $map]);
+        return $map;
+    }
+
+    protected function assignColumnsToTable(TableSchema $table, array $columns)
+    {
+        foreach ($columns as $column) {
+            $c = new ColumnSchema(['name' => $column['column_name']]);
+            $c->quotedName = $this->quoteColumnName($c->name);
+            $c->dbType = $column['data_type'];
+            $c->allowNull = strtolower($column['is_nullable']) === 'yes';
+            $c->defaultValue = $column['column_default'] ?? null;
+            $c->isPrimaryKey = false;
+            $this->extractType($c, $c->dbType);
+            $this->extractLimit($c, $c->dbType);
+            $c->fixedLength = $this->extractFixedLength($c->dbType);
+
+            $table->addColumn($c);
+        }
     }
 
     /**
@@ -140,35 +175,5 @@ class TrinoSchema extends SqlSchema
         }
 
         return null;
-    }
-
-    /**
-     * Load columns for a given table into the TableSchema object.
-     *
-     * @param TableSchema $table
-     */
-    protected function loadTableColumns(TableSchema $table)
-    {
-        $catalog = $table->catalogName ?? $this->getDefaultCatalog();
-        $schema = $table->schemaName ?? $this->getDefaultSchema($catalog);
-        $tableName = $table->resourceName ?? $table->name;
-
-        $sql = 'SHOW COLUMNS FROM ' . $catalog . '.' . $schema . '.' . $tableName;
-        $columns = $this->connection->select($sql);
-
-        foreach ($columns as $column) {
-            $column = array_change_key_case((array)$column, CASE_LOWER);
-            $c = new ColumnSchema(['name' => $column['column']]);
-            $c->quotedName = $this->quoteColumnName($c->name);
-            $c->dbType = $column['type'];
-            $c->allowNull = (isset($column['null']) ? strtolower($column['null']) === 'yes' : true);
-            $c->defaultValue = $column['default'] ?? null;
-            $c->isPrimaryKey = false;
-            $this->extractType($c, $c->dbType);
-            $this->extractLimit($c, $c->dbType);
-            $c->fixedLength = $this->extractFixedLength($c->dbType);
-
-            $table->addColumn($c);
-        }
     }
 }
