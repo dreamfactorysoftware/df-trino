@@ -41,7 +41,6 @@ EOT
         // Set env variables for unixODBC
         putenv("ODBCINI=$odbcIni");
 
-        \Log::debug($dsn . ' Connecting...');
         // Attempt connection
         $connection = odbc_connect($dsn, $user, $pass);
 

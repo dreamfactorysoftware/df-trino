@@ -24,6 +24,8 @@ class TrinoConfig extends BaseServiceConfigModel
         'port',
         'username',
         'password',
+        'catalog',
+        'schema',
         'driver_path',
     ];
 
@@ -88,6 +90,20 @@ class TrinoConfig extends BaseServiceConfigModel
                 $schema['description'] =
                     'Your ODBC Driver Path';
                 $schema['default'] = '/opt/simba/trinoodbc/lib/64/libtrinoodbc_sb64.so';
+                break;
+            case 'catalog':
+                $schema['label'] = 'Default Trino Catalog';
+                $schema['type'] = 'text';
+                $schema['description'] = 'The name of the catalog that will used for requests by default.' .
+                    'A catalog in Trino is a namespace that contains one or more schemas and it represents a specific data source.';
+                break;
+            case 'schema':
+                $schema['label'] = 'Default Trino Schema From Catalog';
+                $schema['type'] = 'text';
+                $schema['description'] =
+                    'The name of the schema within the specified catalog that will be used for requests by default. ' .
+                    'A schema organizes tables and other database objects,' .
+                    'allowing for better structure and management of the data within the catalog.';
                 break;
         }
     }
