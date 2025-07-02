@@ -26,11 +26,14 @@ class TrinoConnector extends Connector implements ConnectorInterface
         $host     = $config['odbc']['host'];
         $port     = $config['odbc']['port'];
 
-        // Temp file paths
-        $odbcIni     = '/var/tmp/dreamfactory_trino_dns_odbc.ini';
+        // Determine the appropriate temporary file path
+        $tempDir = sys_get_temp_dir(); // Get the system temporary directory
+        $odbcIni = $tempDir . DIRECTORY_SEPARATOR . 'dreamfactory_trino_dns_odbc.ini';
 
         // Write odbc.ini
-        file_put_contents($odbcIni, <<<EOT
+        file_put_contents(
+            $odbcIni,
+            <<<EOT
 [$dsn]
 Driver=$driver_path
 Host=$host
