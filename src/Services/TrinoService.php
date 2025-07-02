@@ -34,16 +34,6 @@ class TrinoService extends SqlDb
 
     public static function adaptConfig(array &$config)
     {
-        $catalog = Request::header('catalog');
-        $schema = Request::header('schema');
-        if (!empty($catalog) && !empty($schema)) {
-            $config['catalog'] = $catalog;
-            $config['schema'] = $schema;
-        } elseif (!empty($catalog) && empty($schema)) {
-            throw new \Exception("If catalog is specified, the schema field cannot be empty.");
-        } elseif (empty($catalog) && !empty($schema)) {
-            throw new \Exception("If schema is specified, the catalog field cannot be empty.");
-        }
         $config['driver'] = 'trino';
         if (!isset($config['odbc'])) {
             $config['odbc'] = [];
