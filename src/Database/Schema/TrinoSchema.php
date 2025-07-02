@@ -70,7 +70,6 @@ class TrinoSchema extends SqlSchema
             $map[$table][] = $col;
         }
 
-        \Log::debug(['$map' => $map]);
         return $map;
     }
 
