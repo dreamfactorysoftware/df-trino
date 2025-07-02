@@ -4,6 +4,8 @@ namespace DreamFactory\Core\Trino\Database;
 
 use Illuminate\Database\Connection;
 use DreamFactory\Core\Trino\Database\Schema\TrinoSchema;
+use \Illuminate\Database\Query\Builder;
+use \Illuminate\Database\Query\Expression;
 
 class TrinoConnection extends Connection
 {
@@ -48,7 +50,8 @@ class TrinoConnection extends Connection
                 $query = preg_replace('/\\?/', $value, $query, 1);
             }
         }
-        
+
+        \Log::debug(['$query' => $query]);
         // No parameter binding support here; bindings must be injected safely before calling select
         $result = odbc_exec($conn, $query);
 
@@ -75,5 +78,33 @@ class TrinoConnection extends Connection
         if ($this->odbcConnection) {
             odbc_close($this->odbcConnection);
         }
+    }
+
+    /**
+     * Properly quote a Trino table name: catalog.schema.table (table may contain dots/colons)
+     */
+    protected function trinoQuoteTableName($fullName)
+    {
+        $parts = explode('.', $fullName, 3);
+        if (count($parts) < 3) {
+            throw new \Exception("Invalid Trino table name: $fullName");
+        }
+        list($catalog, $schema, $table) = $parts;
+        return '"' . $catalog . '"."' . $schema . '"."' . $table . '"';
+    }
+
+    public function table($table, $as = null)
+    {
+        $processor = $this->getPostProcessor();
+        $grammar = $this->getQueryGrammar();
+        $query = new Builder($this, $grammar, $processor);
+
+        // If the table name is a string with at least two dots, quote as Trino expects
+        if (is_string($table) && substr_count($table, '.') >= 2) {
+            $table = new Expression($this->trinoQuoteTableName($table));
+        }
+
+        \Log::debug(['$table' => $table]);
+        return $query->from($table, $as);
     }
 }
