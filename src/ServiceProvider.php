@@ -39,6 +39,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                     'subscription_required' => LicenseLevel::SILVER, // Tepm value, so needs to be clarified
                     'config_handler'        => TrinoConfig::class,
                     'factory'               => function ($config) {
+                        $this->checkHeaders($config['config']);
                         return new TrinoService($config);
                     },
                 ])
@@ -51,5 +52,20 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                 return new TrinoSchema($connection);
             });
         });
+    }
+
+    protected function checkHeaders(&$config)
+    {
+        $this->substituteConfig('catalog', 'header', $config);
+        $this->substituteConfig('schema', 'header', $config);
+    }
+
+    protected function substituteConfig($name, $parameter, &$config)
+    {
+        if ($parameter === 'header') {
+            if (request()->hasHeader($name) && !empty(request()->header($name))) {
+                $config[$name] = request()->header($name);
+            }
+        }
     }
 }

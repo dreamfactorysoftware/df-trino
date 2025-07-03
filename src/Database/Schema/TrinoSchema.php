@@ -19,9 +19,9 @@ class TrinoSchema extends SqlSchema
         ];
     }
 
-    protected function getTableNames($schema = '', $catalog = '')
+    protected function getTableNames($schema = '')
     {
-        $catalog = $catalog ?: $this->getDefaultCatalog();
+        $catalog = $this->getDefaultCatalog();
         if (empty($catalog)) {
             throw new \Exception('No available catalogs found');
         }
@@ -44,11 +44,9 @@ class TrinoSchema extends SqlSchema
             $resourceName = $row[0];
             $internalName = $catalogName . '.' . $schemaName . '.' . $resourceName;
             $name = $resourceName;
-            $quotedName = $this->quoteTableName($schemaName) . '.' . $this->quoteTableName($resourceName);
+            $quotedName = $this->quoteTableName($catalog) . '.' . $this->quoteTableName($schemaName) . '."' . $resourceName . '"';
             $settings = compact('catalogName', 'schemaName', 'resourceName', 'name', 'internalName', 'quotedName');
             $tableSchema = new TableSchema($settings);
-
-            $this->loadTableColumns($tableSchema);
 
             $names[strtolower($name)] = $tableSchema;
         }
@@ -149,11 +147,7 @@ class TrinoSchema extends SqlSchema
      */
     protected function loadTableColumns(TableSchema $table)
     {
-        $catalog = $table->catalogName ?? $this->getDefaultCatalog();
-        $schema = $table->schemaName ?? $this->getDefaultSchema($catalog);
-        $tableName = $table->resourceName ?? $table->name;
-
-        $sql = 'SHOW COLUMNS FROM ' . $catalog . '.' . $schema . '.' . $tableName;
+        $sql = 'SHOW COLUMNS FROM ' . $table->quotedName;
         $columns = $this->connection->select($sql);
 
         foreach ($columns as $column) {
