@@ -20,15 +20,14 @@ class TrinoConnector extends Connector implements ConnectorInterface
         $dsn      = 'TrinoSimbaODBC';
         $user     = $config['odbc']['username'];
         $pass     = $config['odbc']['password'];
-        $driver_path   = $config['odbc']['driver_path'];
+        $driver   = $config['odbc']['driver_path'];
         $host     = $config['odbc']['host'];
         $port     = $config['odbc']['port'];
 
         try {
             if (stripos(PHP_OS, 'WIN') === 0) {
                 // Windows: DSN-less connection string
-                $driverEscaped = str_replace('\\', '\\\\', $driver_path);
-                $connectionString = "Driver={$driverEscaped};Host={$host};Port={$port};";
+                $connectionString = "Driver={$driver};Host={$host};Port={$port};";
             } else {
                 // Linux: create a temporary odbc.ini with DSN
                 $dsn      = 'TrinoSimbaODBC';
@@ -37,7 +36,7 @@ class TrinoConnector extends Connector implements ConnectorInterface
 
                 $iniContent = <<<EOT
 [$dsn]
-Driver=$driver_path
+Driver=$driver
 Host=$host
 Port=$port
 EOT;

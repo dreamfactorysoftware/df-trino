@@ -40,7 +40,6 @@ class TrinoConfig extends BaseServiceConfigModel
     protected static function prepareConfigSchemaField(array &$schema)
     {
         parent::prepareConfigSchemaField($schema);
-
         switch ($schema['name']) {
             case 'label':
                 $schema['label'] = 'Simple label';
@@ -84,12 +83,14 @@ class TrinoConfig extends BaseServiceConfigModel
                     'Your TrinoService Password';
                 break;
             case 'driver_path':
-                $schema['label'] = 'Trino ODBC Driver Path';
+                $schema['label'] = 'Trino ODBC Driver Path/Name';
                 $schema['type'] = 'text';
                 $schema['required'] = true;
                 $schema['description'] =
-                    'Your ODBC Driver Path';
-                $schema['default'] = '/opt/simba/trinoodbc/lib/64/libtrinoodbc_sb64.so';
+                    'Full path to the ODBC driver on Linux, or registered driver name in curly braces on Windows.';
+                $schema['default'] = stripos(PHP_OS, 'WIN') === 0
+                    ? '{Simba Trino ODBC Driver}'
+                    : '/opt/simba/trinoodbc/lib/64/libtrinoodbc_sb64.so';;
                 break;
             case 'catalog':
                 $schema['label'] = 'Default Trino Catalog';
