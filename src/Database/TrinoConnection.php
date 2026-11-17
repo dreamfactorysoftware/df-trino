@@ -27,8 +27,13 @@ class TrinoConnection extends Connection
 
     /**
      * Override select method to use native ODBC functions to avoid PDO_ODBC binding issues.
+     *
+     * Note: Laravel 13 added a 4th parameter `array $fetchUsing = []` to
+     * Illuminate\Database\Connection::select(). The override must match the
+     * parent signature for LSP. ODBC bindings are still injected manually
+     * below; the new parameter is accepted for compatibility but not used.
      */
-    public function select($query, $bindings = [], $useReadPdo = true)
+    public function select($query, $bindings = [], $useReadPdo = true, array $fetchUsing = [])
     {
         if ($this->pretending()) {
             return [];
