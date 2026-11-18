@@ -9,6 +9,26 @@ use DreamFactory\Core\Database\Schema\ColumnSchema;
 
 class TrinoSchema extends SqlSchema
 {
+    /**
+     * Validate a Trino catalog/schema identifier before concatenation
+     * into a SHOW TABLES FROM / FROM clause.
+     *
+     * Trino identifiers (catalog/schema) cannot be passed as bound
+     * parameters — the SQL parser requires them in the query text. So
+     * the only safe path is identifier-shape validation: alphanumeric +
+     * underscore + hyphen, no whitespace/quotes/dots/operators.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public static function assertSafeTrinoIdentifier(string $value, string $context = 'identifier'): void
+    {
+        if ($value === '' || preg_match('/^[A-Za-z_][A-Za-z0-9_-]*$/', $value) !== 1) {
+            throw new \InvalidArgumentException(
+                "Invalid Trino {$context}: must match identifier syntax."
+            );
+        }
+    }
+
     public function getSupportedResourceTypes()
     {
         return [
@@ -25,14 +45,17 @@ class TrinoSchema extends SqlSchema
         if (empty($catalog)) {
             throw new \Exception('No available catalogs found');
         }
-        $sql = 'SHOW TABLES FROM ' . $catalog;
-
-        if (!empty($schema)) {
-            $sql .= ".{$schema}";
-        } else {
+        if (empty($schema)) {
             $schema = $this->getDefaultSchema($catalog);
-            $sql .= ".{$schema}";
         }
+        // Trino identifiers (catalog/schema) cannot be passed as bound
+        // parameters — they must be in the query text. Validate as
+        // identifiers before concatenation; reject anything that could
+        // smuggle SQL syntax.
+        self::assertSafeTrinoIdentifier($catalog, 'catalog');
+        self::assertSafeTrinoIdentifier($schema, 'schema');
+        $sql = 'SHOW TABLES FROM ' . $this->quoteTableName($catalog)
+            . '.' . $this->quoteTableName($schema);
 
         $rows = $this->connection->select($sql);
 
@@ -66,8 +89,10 @@ class TrinoSchema extends SqlSchema
         if (empty($catalog)) {
             throw new \Exception('No catalogs found for schema discovery');
         }
+        self::assertSafeTrinoIdentifier($catalog, 'catalog');
 
-        $sql = "select schema_name FROM {$catalog}.information_schema.schemata";
+        $sql = "select schema_name FROM " . $this->quoteTableName($catalog)
+            . ".information_schema.schemata";
 
         $rows = $this->connection->select($sql);
 
